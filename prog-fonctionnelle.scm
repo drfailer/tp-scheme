@@ -192,9 +192,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define union
   (lambda (L1 L2)
-    (if (null? L1)
-        L2
-        (cons (car L1) (union (cdr L1) L2)))))
+    (epure (append L1 L2))))
 
 (union () ())
 (union () '(1 2 3))
@@ -256,6 +254,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; prod
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define prod
+  (lambda (L1 L2)
+    (letrec ((prodfac
+              (lambda (n lst)
+                (if (null? lst)
+                    ()
+                    (cons (list n (car lst)) (prodfac n (cdr lst)))))))
+      (if (null? L1)
+          ()
+          (append (prodfac (car L1) L2) (prod (cdr L1) L2))))))
+
+(prod () ())
+(prod () '(4 5 6))
+(prod '(1 2 3) ())
+(prod '(1 2 3) '(4 5 6))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; som_list
@@ -317,3 +330,127 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define ies
+  (lambda (n L)
+    (if (null? L)
+        '(() () ())
+        (let* ((t (ies n (cdr L)))
+              (inf (car t)) (eq (cadr t)) (sup (caddr t)) (x (car L)))
+          (cond
+           ((< x n) (list (cons x inf) eq sup))
+           ((> x n) (list inf eq (cons x sup)))
+           (else (list inf (cons x eq) sup)))))))
+
+
+(ies 5 '(0 1 2 3 4 5 6 7 1 5 4 6 7 2 8 9 0 8 9))
+(ies 5 '(0 1 2 3 4 5 6 7 8 9))
+(ies 5 ())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; tri-ins
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tri-ins
+  (lambda (L)
+    (letrec ((insert
+              (lambda (n lst)
+                (if (null? lst)
+                    (list n)
+                    (if (< n (car lst))
+                        (cons n lst)
+                        (cons (car lst) (insert n (cdr lst))))))))
+      (if (null? l)
+          ()
+          (insert (car L) (tri-ins (cdr L)))))))
+
+(tri-ins ())
+(tri-ins '(1))
+(tri-ins '(1 4 2 5 7 8))
+(tri-ins '(4 3 2 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; tri-sel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tri-sel
+  (lambda (L)
+    (letrec ((min-and-rest
+              (lambda (L)
+                (if (null? L)
+                    (list "end" ())
+                    (let ((s (min-and-rest (cdr L))))
+                      (if (and (not (equal? "end" (car s))) (> (car L) (car s)))
+                          (list (car s) (cons (car L) (cadr s)))
+                          (list (car L) (cons (car s) (cadr s)))))))))
+      (if (null? L)
+          ()
+          (let ((r (min-and-rest L)))
+            (if (equal? "end" (car r))
+                ()
+                (cons (car r) (tri-sel (cadr r)))))))))
+
+(tri-sel ())
+(tri-sel '(6))
+(tri-sel '(6 4))
+(tri-sel '(6 5 8 9 4 1 2 3 7))
+(tri-sel '(6 5 8 9 4 1 2 3 7 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; tri-bul
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; tri-fus
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tri-fusion
+  (lambda (L)
+    (if (null? L)
+        ()
+        (letrec* ((split ;; coupe une liste en 2
+                   (lambda (L)
+                     (cond
+                      ((null? L) (list () ()))
+                      ((null? (cdr L)) (list L ()))
+                      (else (let ((h1 (car L))
+                                  (h2 (cadr L))
+                                  (lsts (split (cddr L))))
+                              (list (cons h1 (car lsts))
+                                    (cons h2 (cadr lsts))))))))
+                 ;; fusionne 2 listes triées
+                 (fusion
+                  (lambda (L1 L2)
+                    (cond
+                     ((null? L1) L2)
+                     ((null? L2) L1)
+                     ((< (car L1) (car L2)) (cons (car L1) (fusion (cdr L1) L2)))
+                     (else (cons (car L2) (fusion L1 (cdr L2)))))))
+                 ;; variables
+                 (splited (split L))
+                 (L1 (car splited))
+                 (L2 (cadr splited)))
+          (fusion (if (and (not (null? L1)) (not (null? (cdr L1))))
+                      (tri-fusion L1) L1)
+                  (if (and (not (null? L2)) (not (null? (cdr L2))))
+                      (tri-fusion L2) L2))))))
+
+
+(tri-fusion ())
+(tri-fusion '(6))
+(tri-fusion '(6 4))
+(tri-fusion '(6 5 8 9 4 1 2 3 7))
+(tri-fusion '(6 5 8 9 4 1 2 3 7 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; tri-rap
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tri-rap
+  (lambda (L)
+    (if (null? L)
+        ()
+        (let ((return-ies (ies (car L) L)))
+          (append (tri-rap (car return-ies))
+                  (cadr return-ies)
+                  (tri-rap (caddr return-ies)))))))
+
+(tri-rap ())
+(tri-rap '(1))
+(tri-rap '(1 4 2 5 7 8))
+(tri-rap '(4 3 2 1))
