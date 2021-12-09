@@ -1,4 +1,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Feuille 1:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; quad
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define quad
@@ -325,6 +329,7 @@
 (fibo 0)
 (fibo 1)
 (fibo 5)
+(fibo 8)
 (fibo 50)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -396,6 +401,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; tri-bul
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tri-bul
+  (lambda (L)
+    (letrec ((parcour-echange
+              (lambda (L)
+                (cond
+                 ((null? L) ())
+                 ((null? (cdr L)) (list (car L) ()))
+                 (else
+                  (let ((r (parcour-echange (cdr L))))
+                    (if (< (car L) (car r))
+                        (list (car L) (cons (car r) (cadr r)))
+                        (list (car r) (cons (car L) (cadr r))))))))))
+      (if (null? L)
+          ()
+          (let ((s (parcour-echange L)))
+            (cons (car s) (tri-bul (cadr s))))))))
+
+(tri-bul ())
+(tri-bul '(1))
+(tri-bul '(2 4 3 9 6 7))
+(tri-bul '(4 3 2 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; tri-fus
@@ -454,3 +480,287 @@
 (tri-rap '(1))
 (tri-rap '(1 4 2 5 7 8))
 (tri-rap '(4 3 2 1))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Feuille 2:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 1:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exist?
+  (lambda (p L)
+    (if (null? L)
+        #f
+        (or (p (car L)) (exist? p (cdr L))))))
+
+(define pour-tout?
+  (lambda (p L)
+                (if (null? L)
+                    #t
+                    (and (p (car L)) (pour-tout? p (cdr L))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; tous-egaux (existanciel)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tous-egaux-e
+  (lambda (L)
+    (if (null? L)
+        #t
+        (not (exist? (lambda (x) (not (= x (car L)))) L)))))
+
+(tous-egaux-e ())
+(tous-egaux-e '(1))
+(tous-egaux-e '(1 1 1 1))
+(tous-egaux-e '(1 1 2 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; tous-egaux (universel)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tous-egaux-u
+  (lambda (L)
+    (if (null? L)
+        #t
+        (pour-tout? (lambda (x) (= x (car L))) L))))
+
+(tous-egaux-u ())
+(tous-egaux-u '(1))
+(tous-egaux-u '(1 1 1 1))
+(tous-egaux-u '(1 1 2 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; tous-diff (existanciel)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tous-diff-e
+  (lambda (L)
+    (if (null? L)
+        #t
+        (and (not (exist? (lambda (x) (= x (car L))) (cdr L)))
+             (tous-diff-e (cdr L))))))
+
+(tous-diff-e ())
+(tous-diff-e '(1))
+(tous-diff-e '(1 1 1 1))
+(tous-diff-e '(5 1 2 1))
+(tous-diff-e '(4 2 1 6))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; tous-diff (universel)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define tous-diff-u
+  (lambda (L)
+    (if (null? L)
+        #t
+        (and (pour-tout? (lambda (x) (not (= x (car L)))) (cdr L))
+             (tous-diff-u (cdr L))))))
+
+(tous-diff-u ())
+(tous-diff-u '(1))
+(tous-diff-u '(1 1 1 1))
+(tous-diff-u '(1 1 2 1))
+(tous-diff-u '(4 2 1 6))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 2:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Schema de recurrences simples:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define schema-rec
+  (lambda (f arret neutre n)
+    (if (arret n)
+        neutre
+        (f (schema-rec f arret neutre (- n 1)) n))))
+
+(schema-rec (lambda (x y) (+ x y)) (lambda (x) (= x 0)) 0 10)
+(schema-rec (lambda (x y) (+ x (* y y))) (lambda (x) (= x 0)) 0 10)
+(schema-rec (lambda (x y) (* x y)) (lambda (x) (= x 1)) 1 5)
+(schema-rec (lambda (x y) (list (cadr x) (+ (car x) (cadr x))))
+            (lambda (x) (= x 0))
+            '(1 1)
+            10)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Schema de recurrences double:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define sh-rec-double
+  (lambda (f init0 init1 n)
+    (cond
+     ((= 0 n) init0)
+     ((= 1 n) init1)
+     (else
+      (f (sh-rec-double f init0 init1 (- n 1))
+         (sh-rec-double f init0 init1 (- n 2))
+         n)))))
+
+(sh-rec-double (lambda (u1 u2 n) (+ u1 u2)) 1 1 5)
+(sh-rec-double (lambda (u1 u2 n) (+ u1 u2)) 1 1 8)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 3:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define reflexive
+  (lambda (E R)
+    (pour-tout? (lambda (x) (R x x)) E)))
+
+(reflexive () (lambda (x y) (= x y)))
+(reflexive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= x y)))
+(reflexive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (* x y) 0)))
+(reflexive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (modulo x y) 0)))
+
+(define symetrique
+  (lambda (E R)
+    (pour-tout? (lambda (x)
+       (pour-tout? (lambda (y)
+          (if (R x y)
+              (R y x)
+              #t))
+        E)) E)))
+
+(symetrique () (lambda (x y) (= x y)))
+(symetrique '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= x y)))
+(symetrique '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (* x y) 0)))
+(symetrique '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (modulo x y) 0)))
+
+(define transitive
+  (lambda (E R)
+    (pour-tout? (lambda (x)
+       (pour-tout? (lambda (y)
+          (pour-tout? (lambda (z)
+             (if (and (R x y) (R y z))
+                 (R x z)
+                 #t))
+           E)) E)) E)))
+
+(transitive () (lambda (x y) (= x y)))
+(transitive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= x y)))
+(transitive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (* x y) 0)))
+(transitive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (modulo x y) 0)))
+
+;; TODO: quotient
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 4:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define PC
+  (lambda (E n)
+    (if (= 0 n)
+        '(())
+        (let ((prev (PC E (- n 1))))
+          (append-map (lambda (x)
+                 (map (lambda (y)
+                        (cons x y)) prev)) E)))))
+
+(PC '(0 1) 0)
+(PC '(0 1) 1)
+(PC '(0 1) 2)
+(PC '(0 1) 3)
+(PC '(0 1) 4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 5:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define chemin
+  (lambda (dep but G)
+    (if (equal? dep but)
+        (list but)
+        (letrec* ((find (lambda (d g) ;; find d and remove it from g
+                         (if (null? g)
+                             '(() ("null" ()))
+                             (if (equal? d (caar g))
+                                 (list (cdr g) (car g))
+                                 (let ((t (find d (cdr g))))
+                                   (list (cons (car g) (car t)) (cadr t)))))))
+                  (sd (find dep G)))
+          (map (lambda (x) (cons dep x))
+               (if (null? cadadr)
+                   ()
+                   (append-map (lambda (y) (chemin y but (car sd))) (cadadr sd))))))))
+
+
+(chemin 'D 'D '((D (A C)) (A (D C B)) (C (B)) (B ())))
+(chemin 'D 'A '((D (A C)) (A (D C B)) (C (B)) (B ())))
+(chemin 'D 'C '((D (A C)) (A (D C B)) (C (B)) (B ())))
+(chemin 'D 'B '((D (A C)) (A (D C B)) (C (B)) (B ())))
+(chemin 'B 'D '((D (A C)) (A (D C B)) (C (B)) (B ())))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 6:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define trace
+  (lambda (M)
+    (if (null? M)
+        0
+        (+ (caar M) (trace (map cdr (cdr M)))))))
+
+(trace ())
+(trace '((1 2 3) (4 5 6) (7 8 9)))
+
+(define transp
+  (lambda (M)
+    (if (or (null? M) (null? (car M)))
+        ()
+        (cons (map car M) (transp (map cdr M))))))
+
+(transp ())
+(transp '((1 2 3) (4 5 6) (7 8 9)))
+
+(define MV
+  (lambda (M V)
+    (if (null? M)
+        ()
+        (map (lambda (x) (apply + (map * x V))) M))))
+
+(MV () '(1 2 3))
+(MV '((1 2 3) (4 5 6) (7 8 9)) '(1 1 1))
+(MV '((1 2 3) (4 5 6) (7 8 9)) '(1 0 0))
+
+(define AL
+  (lambda (M)
+    (lambda (x)
+      (MV M x))))
+
+(AL '((1 2 3) (4 5 6) (7 8 9)))
+((AL '((1 2 3) (4 5 6) (7 8 9))) '(1 2 3))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 7:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define compose
+  (lambda (f g)
+    (lambda (x)
+      (f (g x)))))
+
+((compose (lambda (x) (+ x 2)) (lambda (y) (* y 2))) 3)
+
+(define trace-fn
+  (lambda (f n)
+    (letrec ((composeN (lambda (F N)
+                         (if (= N 0)
+                             (lambda (x) x)
+                             (compose F (composeN F (- N 1)))))))
+      (if (= n 0)
+          (list (composeN f 0))
+          (append (trace-fn f (- n 1)) (list (composeN f n)))))))
+
+(map (lambda (f) (f 1)) (trace-fn (lambda (x) (* x 2)) 4))
+
+(define applique
+  (lambda (Lf x)
+    (map (lambda (f) (f x)) Lf)))
+
+(applique (trace-fn (lambda (x) (* x x)) 3) 2)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 8:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
