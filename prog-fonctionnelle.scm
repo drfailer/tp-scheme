@@ -643,7 +643,25 @@
 (transitive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (* x y) 0)))
 (transitive '(1 2 3 1 4 5 3 6 7 4 8 9) (lambda (x y) (= (modulo x y) 0)))
 
-;; TODO: quotient
+ 
+;; E '(0 1 2 3 4 5 6)) 
+;; R (lambda (x y) (= (modulo (- x y) 3) 0)))
+;; Résultat:
+;; ((0 3 6) (1 4) (2 5)). 
+
+(define quotient
+  (lambda (E R)
+    (if (null? E)
+        ()
+        (letrec ((find-group (lambda (e l)
+                               (if (null? l)
+                                   (list (list e))
+                                   (if (R e (caar l))
+                                          (cons (cons e (car l)) (cdr l))
+                                          (cons (car l) (find-group e (cdr l))))))))
+          (find-group (car E) (quotient (cdr E) R))))))
+
+(quotient '(0 1 2 3 4 5 6) (lambda (x y) (= (modulo (- x y) 3) 0)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -764,3 +782,92 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Exercice 8:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define P
+  (lambda (E)
+    (if (null? E)
+        '(())
+        (let ((s (P (cdr E))))
+          (append s (map (lambda (x) (cons (car E) x)) s))))))
+
+;; (append (map (lambda (x) append (car E)) (P (cdr E))) (P (cdr E)))
+(P '(1 2 3))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 9:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define P2
+  (lambda (E)
+    (if (null? (cddr E))
+        (list (list (list (car E)) (cdr E)))
+        (let ((r (P2 (cdr E))))
+          (append (map (lambda (x) (list (cons (car E) (car x)) (cadr x))) r)
+                  (map (lambda (x) (list (car x) (cons (car E) (cadr x)))) r)
+                  (list (cons (list (car E)) (list (cdr E)))))))))
+
+(P2 '(1 2))
+(P2 '(1 2 3))
+(P2 '(1 2 3 4))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 10:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1-a
+(define fct
+  (lambda (d a)
+    (lambda (x)
+      (if (null? d)
+          ()
+          (if (equal? x (car d))
+              (car a)
+              ((fct (cdr d) (cdr a)) x))))))
+
+((fct '(a b c) '(x y z)) 'b)
+((fct '(a b c d) '(x y z t)) 'a)
+((fct '(a b c d) '(x y z t)) 'd)
+
+;; 1-b
+(define LF
+  (lambda (E F)
+    (let* ((n (length E))
+          (pf (PC F n)))
+      (map (lambda (x)
+             (fct x E))
+           pf))))
+
+(LF '(a b c) '(x y z))
+
+;; 2-a
+(define SREX10
+  (lambda (L init f)
+    (if (null? L)
+        init
+        (f (car L) (SREX10 (cdr L) init f)))))
+
+(define filter
+  (lambda (E P)
+    (SREX10 E () (lambda (u1 u2)
+                   (if (P u1)
+                       (cons u1 u2)
+                       u2)))))
+
+(filter '(1 a 2 b) integer?)
+
+;; 2-b
+(define qqs?
+  (lambda (L P)
+    (if (null? L)
+        #t
+        (and (P (car L)) (qqs? (cdr L) P)))))
+
+(define stabilise?
+  (lambda (f P)
+    (letrec ((appartien? (lambda (l n)
+                           (if (null? l)
+                               #f
+                               (or (equal? (car l) n) (appartien? (cdr l) n))))))
+      (qqs? P (lambda (x) (appartien? P (f x)))))))
+
+(stabilise? (lambda (x) x) '(1 2 3 4))
+(stabilise? (lambda (x) (+ 1 x)) '(1 2 3 4))
