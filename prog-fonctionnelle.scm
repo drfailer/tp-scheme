@@ -871,3 +871,105 @@
 
 (stabilise? (lambda (x) x) '(1 2 3 4))
 (stabilise? (lambda (x) (+ 1 x)) '(1 2 3 4))
+
+;; 2-c
+;; OUI!
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Exercice 11:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun
+  (lambda (x)
+    (* x 2)))
+
+;; 1)
+(define zero
+  (lambda (f)
+    (lambda (x) x)))
+
+((zero fun) 5)
+
+(define un
+  (lambda (f)
+    (lambda (x) (f x))))
+
+((un fun) 5)
+
+(define deux
+  (lambda (f)
+    (lambda (x) (f (f x)))))
+
+((deux fun) 5)
+
+;; 2)
+(define trois
+  (lambda (f)
+    (lambda (x) (f ((deux f) x)))))
+
+((trois fun) 5)
+
+;; 3)
+(define succ
+  (lambda (rn)
+    (lambda (f)
+      (lambda (x)
+        (f ((rn f) x))))))
+
+(((succ un) fun) 5)
+(((succ deux) fun) 5)
+(((succ trois) fun) 5)
+
+;; 4)
+(define nom
+  (lambda (rn listenoms)
+    (car ((rn cdr) listenoms))))
+
+(nom trois '(0 1 2 3 4 5))
+
+;; 5)
+(define entier
+  (lambda (nom listenoms)
+    (cond
+     ((null? listenoms) #f)
+     ((equal? (car listenoms) nom) zero)
+     (else
+      (let ((r (entier nom (cdr listenoms))))
+        (if (equal? r #f)
+            #f
+            (succ r)))))))
+
+(entier 3 '(0 1 2 3 4 5))
+((entier 3 '(0 1 2 3 4 5)) fun)
+(((entier 3 '(0 1 2 3 4 5)) fun) 5)
+(((entier 0 '(0 1 2 3 4 5)) fun) 5)
+
+;; 6-a)
+(define plus
+  (lambda (rn rm)
+    (lambda (f)
+      (lambda (x)
+        ((rn f) ((rm f) x))))))
+
+;; les deux résultats sont bien égaux:
+(((plus deux trois) fun) 5)
+(((entier 5 '(0 1 2 3 4 5)) fun) 5)
+
+;; 6-b)
+;; C'est une puissance rm^rn:
+;; la fonction passé en argument de rn, c'est rm, donc par exemple, si rn vaut trois et rm
+;; deux, on applique à f, rm . rm . rm = deux . deux . deux = 8 (2^3)
+;; si rn vaut n et rm n on a:
+;; (rn rm) = rm . rm . ... . rm et ceux n fois et (((rm rm) f) x) c'est m fois l'application
+;; de m fois l'application de la fonction f à x, donc m*m
+;; on a donc bien une puissance m^n
+(define A
+  (lambda (rn rm)
+    (lambda (f)
+      (lambda (x) (((rn rm) f) x)))))
+
+(((entier 4 '(0 1 2 3 4 5 6 7 8 9)) fun) 5)
+(((A deux deux) fun) 5)
+(((entier 8 '(0 1 2 3 4 5 6 7 8 9)) fun) 5)
+(((A trois deux) fun) 5)
